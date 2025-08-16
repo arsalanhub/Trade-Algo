@@ -1,10 +1,9 @@
 package com.trade.algo.controllers;
 
+import com.trade.algo.models.DepthModel;
 import com.trade.algo.models.OrderModel;
 import com.trade.algo.requests.OrderRequest;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
@@ -16,10 +15,13 @@ public class OrderController {
     // Seller - Red
     private List<OrderModel> asks=new ArrayList<>();
 
+    private Map<Integer, DepthModel> depth=new HashMap<>();
+
     private Map<String, Double> users=new HashMap<>(
             Map.of(
                     "123", 500.00,
-                    "456", 650.50
+                    "456", 650.50,
+                    "789", 1000.00
             )
     );
 
@@ -48,6 +50,12 @@ public class OrderController {
             asks.sort((a, b) -> b.getPrice().compareTo(a.getPrice()));
         }
         return String.format("Quantity Filled - %d", orderRequest.getQuantity()-remainingQty);
+    }
+
+    @GetMapping("/user/{userId}")
+    public Double getUserBalance(@PathVariable String userId)
+    {
+        return users.getOrDefault(userId, 0.0);
     }
 
     // Removing balance from one user & adding it to another user
@@ -96,7 +104,7 @@ public class OrderController {
                 if(order.getQuantity()>remQty)
                 {
                     // balance will be credited to seller & deducted from the buyer
-                    FlipBalance(userId, order.getUserId(), remQty, order.getPrice());
+                    FlipBalance(userId, order.getUserId(), remQty, price);
                     var qtyLeft=order.getQuantity()-remQty;
                     bids.get(i).setQuantity(qtyLeft);
                     remQty=0;
@@ -104,7 +112,7 @@ public class OrderController {
                 else
                 {
                     // balance will be credited to seller & deducted from the buyer
-                    FlipBalance(userId, order.getUserId(), order.getQuantity(), order.getPrice());
+                    FlipBalance(userId, order.getUserId(), order.getQuantity(), price);
                     remQty-=order.getQuantity();
                     bids.remove(bids.size()-1);
                 }
